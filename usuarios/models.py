@@ -25,6 +25,8 @@ class Usuario(AbstractUser):
 
     username = None
     email = models.EmailField("correo", unique=True)
+    email_verificado = models.BooleanField("correo verificado", default=False)
+    carrera = models.CharField("carrera", max_length=80, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
