@@ -17,3 +17,6 @@ db.sqlite3
 
 # Archivos multimedia locales
 media/
+
+# Archivos estáticos recolectados (collectstatic)
+staticfiles/
