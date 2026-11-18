@@ -1,2 +1,41 @@
-/* Estilos propios de UPBuy. PROVISIONAL (UP-46): Raúl define el diseño en UP-24.
-   Bootstrap 5.3 se carga antes que este archivo en base.html. */
+/* Estilos propios de UPBuy (UP-24).
+   Bootstrap 5.3 se carga antes que este archivo en base.html.
+   Aquí solo van colores y detalles; nada que cambie el comportamiento de Bootstrap. */
+
+:root {
+  /* PENDIENTE: reemplazar por los colores oficiales de la UPB. */
+  --upb-primario: #0d6efd;
+  --upb-primario-oscuro: #0a58ca;
+  --upb-fondo-pie: #f1f3f5;
+}
+
+.upb-navbar {
+  background-color: var(--upb-primario);
+}
+
+.upb-navbar .navbar-brand:hover,
+.upb-navbar .navbar-brand:focus {
+  color: #fff;
+  opacity: .9;
+}
+
+/* Texto claro con buen contraste sobre el color primario. */
+.upb-navbar .nav-link,
+.upb-navbar .navbar-text {
+  color: rgba(255, 255, 255, .9);
+}
+
+.upb-navbar .nav-link:hover,
+.upb-navbar .nav-link:focus {
+  color: #fff;
+}
+
+/* El nombre largo de un usuario no debe empujar el menú fuera de la pantalla. */
+.upb-usuario {
+  max-width: 14rem;
+}
+
+.upb-footer {
+  background-color: var(--upb-fondo-pie);
+  color: #495057;
+}

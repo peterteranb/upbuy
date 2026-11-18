@@ -1,0 +1,26 @@
+<nav class="navbar navbar-expand-md navbar-dark upb-navbar">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{% url 'catalogo:lista' %}">UPBuy</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+            aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menú">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="menu-principal">
+      <div class="navbar-nav ms-auto align-items-md-center gap-2 py-2 py-md-0">
+        {% if user.is_authenticated %}
+          <a class="btn btn-light btn-sm fw-semibold" href="{% url 'anuncios:publicar' %}">Publicar</a>
+          <span class="navbar-text text-truncate upb-usuario">{{ user.first_name|default:user.email }}</span>
+          <form method="post" action="{% url 'usuarios:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm w-100">Cerrar sesión</button>
+          </form>
+        {% else %}
+          <a class="nav-link" href="{% url 'usuarios:login' %}">Iniciar sesión</a>
+          <a class="btn btn-light btn-sm fw-semibold" href="{% url 'usuarios:registro' %}">Crear cuenta</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
