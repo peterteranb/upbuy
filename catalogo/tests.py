@@ -107,7 +107,7 @@ class CatalogoListaTests(TestCase):
 
     def test_sin_anuncios_muestra_mensaje_vacio(self):
         respuesta = self.client.get(reverse("catalogo:lista"), {"categoria": self.tecno.slug})
-        self.assertContains(respuesta, "Todavía no hay anuncios en esta categoría.")
+        self.assertContains(respuesta, "Todavía no hay anuncios en Test Tecno.")
 
     def test_tarjeta_muestra_precio_punto_entrega_sin_foto_y_enlace(self):
         anuncio = self.crear_anuncio("Calculadora")

@@ -1,14 +1,27 @@
 {% extends "base.html" %}
-{# PROVISIONAL (UP-46): Santiago la reemplaza en UP-15. #}
 
 {% block title %}Iniciar sesión · UPBuy{% endblock %}
 
 {% block content %}
-  <h1 class="h3 mb-3">Iniciar sesión</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit" class="btn btn-primary">Entrar</button>
-  </form>
+<div class="d-flex justify-content-center">
+  <div class="card shadow-sm w-100" style="max-width: 360px;">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-3">Iniciar sesión</h1>
+
+      {% include "usuarios/_errores_generales.html" %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "usuarios/_campo.html" with campo=form.username %}
+        {% include "usuarios/_campo.html" with campo=form.password %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn-primary w-100">Entrar</button>
+      </form>
+
+      <p class="text-center small mt-3 mb-0">
+        <a href="{% url 'usuarios:registro' %}">¿No tienes cuenta? Regístrate</a>
+      </p>
+    </div>
+  </div>
+</div>
 {% endblock %}

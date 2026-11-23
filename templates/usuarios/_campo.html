@@ -1,0 +1,8 @@
+<div class="mb-3">
+  <label for="{{ campo.id_for_label }}" class="form-label">
+    {{ campo.label }}{% if not campo.field.required %} <span class="text-body-secondary small">(opcional)</span>{% endif %}
+  </label>
+  {{ campo }}
+  {% for error in campo.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+  {% if campo.help_text and not campo.errors %}<div class="form-text">{{ campo.help_text }}</div>{% endif %}
+</div>
