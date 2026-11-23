@@ -49,32 +49,45 @@ class Anuncio(models.Model):
         related_name="anuncios"
     )
 
-    titulo = models.CharField(max_length=150)
+    titulo = models.CharField("título", max_length=150)
 
-    descripcion = models.TextField(blank=True)
+    descripcion = models.TextField("descripción", blank=True)
 
     estado_producto = models.CharField(
+        "estado del producto",
         max_length=20,
         choices=EstadoProducto.choices
     )
 
     precio = models.DecimalField(
+        "precio (Bs)",
         max_digits=10,
         decimal_places=2,
         validators=[
-            MinValueValidator(Decimal("0.01"))
+            MinValueValidator(
+                Decimal("0.01"),
+                message="El precio debe ser mayor a Bs 0."
+            )
         ]
     )
 
     punto_entrega = models.CharField(
+        "punto de entrega",
         max_length=20,
         choices=PuntoEntrega.choices
+    )
+
+    horario_entrega = models.CharField(
+        "horario de entrega",
+        max_length=80,
+        blank=True,
+        help_text="Ej.: lunes a viernes, 12:00 a 14:00"
     )
 
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,
-        default=Estado.EN_REVISION
+        default=Estado.ACTIVO  # Sprint 2: EN_REVISION
     )
 
     creado_en = models.DateTimeField(auto_now_add=True)
@@ -105,8 +118,13 @@ class FotoAnuncio(models.Model):
     )
 
     imagen = models.ImageField(
-        upload_to="anuncios/"
+        upload_to="anuncios/%Y/%m/"
     )
+
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "id"]
 
     def __str__(self):
         return f"Foto de {self.anuncio.titulo}"
