@@ -115,6 +115,15 @@ class RegistroVistaTests(TestCase):
         self.assertContains(respuesta, "Tu correo fue verificado. Ya puedes iniciar sesión.")
         self.assertTrue(Usuario.objects.get(email="ana.perez@upb.edu").email_verificado)
 
+    def test_enlace_sigue_valido_si_inicia_sesion_antes_de_verificar(self):
+        # Se puede iniciar sesión sin verificar; eso no debe invalidar el enlace del correo.
+        self.registrar()
+        self.client.post(
+            reverse("usuarios:login"), {"username": "ana.perez@upb.edu", "password": CLAVE}
+        )
+        self.client.get(self.enlace_del_correo())
+        self.assertTrue(Usuario.objects.get(email="ana.perez@upb.edu").email_verificado)
+
     def test_token_alterado_no_verifica(self):
         self.registrar()
         enlace = self.enlace_del_correo().rstrip("/")
