@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -9,13 +8,14 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from .forms import RegistroForm
+from .tokens import token_verificacion
 
 Usuario = get_user_model()
 
 
 def _enviar_correo_verificacion(request, usuario):
     uidb64 = urlsafe_base64_encode(force_bytes(usuario.pk))
-    token = default_token_generator.make_token(usuario)
+    token = token_verificacion.make_token(usuario)
     enlace = request.build_absolute_uri(
         reverse("usuarios:verificar", kwargs={"uidb64": uidb64, "token": token})
     )
@@ -51,7 +51,7 @@ def verificar(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
         usuario = None
 
-    if usuario is not None and default_token_generator.check_token(usuario, token):
+    if usuario is not None and token_verificacion.check_token(usuario, token):
         if not usuario.email_verificado:
             usuario.email_verificado = True
             usuario.save(update_fields=["email_verificado"])
