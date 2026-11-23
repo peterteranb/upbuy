@@ -61,7 +61,7 @@
   {% endif %}
 {% else %}
   <div class="text-center py-5">
-    <p class="text-body-secondary mb-3">Todavía no hay anuncios en esta categoría.</p>
+    <p class="text-body-secondary mb-3">Todavía no hay anuncios{% if categoria_actual %} en {{ categoria_actual.nombre }}{% endif %}.</p>
     {% if user.is_authenticated %}
       <a href="{% url 'anuncios:publicar' %}" class="btn btn-primary">Publicar</a>
     {% else %}
