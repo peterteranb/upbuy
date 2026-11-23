@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from PIL import Image
 
 from .models import Anuncio, Categoria, FotoAnuncio
@@ -84,3 +85,96 @@ class FotoAnuncioTests(AnuncioBaseTestCase):
         foto_1 = FotoAnuncio.objects.create(anuncio=anuncio, imagen=imagen_png("a.png"), orden=1)
 
         self.assertEqual(list(anuncio.fotos.all()), [foto_0, foto_1, foto_2])
+
+
+class PublicarAnuncioViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        Usuario = get_user_model()
+        cls.verificado = Usuario.objects.create_user(
+            email="verificado@example.com", password="clave-segura-123",
+            email_verificado=True,
+        )
+        cls.sin_verificar = Usuario.objects.create_user(
+            email="sinverificar@example.com", password="clave-segura-123",
+        )
+        cls.categoria = Categoria.objects.get(nombre="Libros")
+
+    def setUp(self):
+        self.media_root = tempfile.mkdtemp()
+        override = override_settings(MEDIA_ROOT=self.media_root)
+        override.enable()
+        self.addCleanup(override.disable)
+        self.addCleanup(shutil.rmtree, self.media_root, ignore_errors=True)
+        self.url = reverse("anuncios:publicar")
+
+    def datos(self, fotos=1, **kwargs):
+        datos = {
+            "titulo": "Libro de cálculo",
+            "descripcion": "Stewart, 7.ª edición",
+            "categoria": self.categoria.pk,
+            "precio": "50.00",
+            "estado_producto": Anuncio.EstadoProducto.USADO,
+            "punto_entrega": Anuncio.PuntoEntrega.BIBLIOTECA,
+            "horario_entrega": "lunes a viernes, 12:00 a 14:00",
+            "fotos": [imagen_png(f"foto{i}.png") for i in range(fotos)],
+        }
+        datos.update(kwargs)
+        return datos
+
+    def test_anonimo_redirige_al_login(self):
+        respuesta = self.client.get(self.url)
+        self.assertRedirects(
+            respuesta, f"{reverse('usuarios:login')}?next={self.url}",
+            fetch_redirect_response=False,
+        )
+
+    def test_usuario_sin_verificar_no_crea_anuncio(self):
+        self.client.force_login(self.sin_verificar)
+        respuesta = self.client.post(self.url, self.datos())
+        self.assertRedirects(respuesta, reverse("catalogo:lista"), fetch_redirect_response=False)
+        self.assertFalse(Anuncio.objects.exists())
+
+    def test_get_muestra_formulario(self):
+        self.client.force_login(self.verificado)
+        respuesta = self.client.get(self.url)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTemplateUsed(respuesta, "anuncios/publicar.html")
+        self.assertContains(respuesta, 'enctype="multipart/form-data"')
+
+    def test_precio_cero_da_error(self):
+        self.client.force_login(self.verificado)
+        respuesta = self.client.post(self.url, self.datos(precio="0"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn("precio", respuesta.context["form"].errors)
+        self.assertFalse(Anuncio.objects.exists())
+
+    def test_sin_fotos_da_error(self):
+        self.client.force_login(self.verificado)
+        respuesta = self.client.post(self.url, self.datos(fotos=0))
+        self.assertFormError(respuesta.context["form"], "fotos", "Sube entre 1 y 5 fotos.")
+        self.assertFalse(Anuncio.objects.exists())
+
+    def test_seis_fotos_da_error(self):
+        self.client.force_login(self.verificado)
+        respuesta = self.client.post(self.url, self.datos(fotos=6))
+        self.assertFormError(respuesta.context["form"], "fotos", "Sube entre 1 y 5 fotos.")
+        self.assertFalse(Anuncio.objects.exists())
+
+    def test_publicacion_valida(self):
+        self.client.force_login(self.verificado)
+        respuesta = self.client.post(self.url, self.datos(fotos=3))
+
+        self.assertEqual(Anuncio.objects.count(), 1)
+        anuncio = Anuncio.objects.get()
+        self.assertEqual(anuncio.estado, Anuncio.Estado.ACTIVO)
+        self.assertEqual(anuncio.vendedor, self.verificado)
+        self.assertEqual(anuncio.precio, Decimal("50.00"))
+        fotos = list(anuncio.fotos.all())
+        self.assertEqual([f.orden for f in fotos], [0, 1, 2])
+        self.assertEqual(
+            [f.imagen.name.rsplit("/", 1)[-1][:5] for f in fotos],
+            ["foto0", "foto1", "foto2"],
+        )
+        self.assertRedirects(respuesta, f"/anuncio/{anuncio.pk}/", fetch_redirect_response=False)
