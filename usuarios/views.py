@@ -1,16 +1,61 @@
-from django.shortcuts import render
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
-# PROVISIONAL (UP-46): Santiago reemplaza estas vistas en UP-14.
-_PENDIENTE = {"responsable": "Santiago", "jira": "UP-14"}
+from .forms import RegistroForm
+
+Usuario = get_user_model()
+
+
+def _enviar_correo_verificacion(request, usuario):
+    uidb64 = urlsafe_base64_encode(force_bytes(usuario.pk))
+    token = default_token_generator.make_token(usuario)
+    enlace = request.build_absolute_uri(
+        reverse("usuarios:verificar", kwargs={"uidb64": uidb64, "token": token})
+    )
+    cuerpo = render_to_string(
+        "usuarios/correo_verificacion.txt", {"usuario": usuario, "enlace": enlace}
+    )
+    send_mail("Verifica tu cuenta de UPBuy", cuerpo, None, [usuario.email])
 
 
 def registro(request):
-    return render(request, "pendiente.html", {"titulo": "Registro", **_PENDIENTE})
+    if request.user.is_authenticated:
+        return redirect("catalogo:lista")
+
+    if request.method == "POST":
+        form = RegistroForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            _enviar_correo_verificacion(request, usuario)
+            return redirect("usuarios:registro_enviado")
+    else:
+        form = RegistroForm()
+    return render(request, "usuarios/registro.html", {"form": form})
 
 
 def registro_enviado(request):
-    return render(request, "pendiente.html", {"titulo": "Registro enviado", **_PENDIENTE})
+    return render(request, "usuarios/registro_enviado.html")
 
 
 def verificar(request, uidb64, token):
-    return render(request, "pendiente.html", {"titulo": "Verificar correo", **_PENDIENTE})
+    try:
+        pk = force_str(urlsafe_base64_decode(uidb64))
+        usuario = Usuario.objects.get(pk=pk)
+    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+        usuario = None
+
+    if usuario is not None and default_token_generator.check_token(usuario, token):
+        if not usuario.email_verificado:
+            usuario.email_verificado = True
+            usuario.save(update_fields=["email_verificado"])
+        messages.success(request, "Tu correo fue verificado. Ya puedes iniciar sesión.")
+        return redirect("usuarios:login")
+
+    return render(request, "usuarios/verificacion_invalida.html", status=400)

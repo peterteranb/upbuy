@@ -1,0 +1,10 @@
+{% autoescape off %}Hola {{ usuario.first_name }}:
+
+Gracias por registrarte en UPBuy. Para verificar tu correo institucional, abre este enlace:
+
+{{ enlace }}
+
+Si no creaste esta cuenta, ignora este mensaje.
+
+El equipo de UPBuy
+{% endautoescape %}

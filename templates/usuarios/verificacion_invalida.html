@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Enlace no válido · UPBuy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card shadow-sm w-100 text-center" style="max-width: 360px;">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-3">Enlace no válido</h1>
+      <p>El enlace de verificación no es válido o ya expiró.</p>
+      <a class="btn btn-primary w-100" href="{% url 'usuarios:login' %}">Ir a iniciar sesión</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
