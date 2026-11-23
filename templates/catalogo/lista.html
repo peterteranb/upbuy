@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{% if categoria_actual %}{{ categoria_actual.nombre }} · {% endif %}Anuncios recientes · UPBuy{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Anuncios recientes</h1>
+
+{# Categorías: en el celular se desplazan horizontalmente en vez de saltar de línea. #}
+<nav aria-label="Categorías" class="mb-3">
+  <div class="d-flex flex-nowrap gap-2 overflow-x-auto pb-2">
+    <a href="{% url 'catalogo:lista' %}"
+       class="btn btn-sm text-nowrap {% if not categoria_actual %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       {% if not categoria_actual %}aria-current="page"{% endif %}>Todas</a>
+    {% for categoria in categorias %}
+      <a href="{% url 'catalogo:lista' %}?categoria={{ categoria.slug }}"
+         class="btn btn-sm text-nowrap {% if categoria == categoria_actual %}btn-primary{% else %}btn-outline-primary{% endif %}"
+         {% if categoria == categoria_actual %}aria-current="page"{% endif %}>{{ categoria.nombre }}</a>
+    {% endfor %}
+  </div>
+</nav>
+
+{% if page_obj.object_list %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
+    {% for anuncio in page_obj %}
+      <div class="col">
+        {% include "catalogo/_tarjeta_anuncio.html" %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <nav aria-label="Paginación de anuncios" class="mt-4">
+      <ul class="pagination justify-content-center flex-wrap">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if categoria_actual %}categoria={{ categoria_actual.slug }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for numero in page_obj.paginator.page_range %}
+          {% if numero == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ numero }}</span></li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if categoria_actual %}categoria={{ categoria_actual.slug }}&amp;{% endif %}page={{ numero }}">{{ numero }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if categoria_actual %}categoria={{ categoria_actual.slug }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% else %}
+  <div class="text-center py-5">
+    <p class="text-body-secondary mb-3">Todavía no hay anuncios{% if categoria_actual %} en {{ categoria_actual.nombre }}{% endif %}.</p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'anuncios:publicar' %}" class="btn btn-primary">Publicar</a>
+    {% else %}
+      {# Sin sesión no se puede publicar: se pide iniciar sesión primero. #}
+      <a href="{% url 'usuarios:login' %}" class="btn btn-primary">Inicia sesión para publicar</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

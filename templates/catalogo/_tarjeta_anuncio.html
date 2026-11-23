@@ -1,0 +1,24 @@
+{% with foto=anuncio.fotos.all.0 %}
+<article class="card h-100 shadow-sm">
+  {% if foto %}
+    <img src="{{ foto.imagen.url }}" alt="{{ anuncio.titulo }}" class="card-img-top"
+         style="height: 180px; object-fit: cover;" loading="lazy">
+  {% else %}
+    <div class="card-img-top bg-secondary-subtle text-body-secondary d-flex align-items-center justify-content-center"
+         style="height: 180px;">Sin foto</div>
+  {% endif %}
+  <div class="card-body">
+    <p class="fw-bold fs-5 mb-1">Bs {{ anuncio.precio|floatformat:2 }}</p>
+    <h2 class="h6 card-title mb-2"
+        style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+      <a href="{% url 'catalogo:detalle' anuncio.pk %}" class="stretched-link text-reset text-decoration-none">{{ anuncio.titulo }}</a>
+    </h2>
+    <p class="card-text small text-body-secondary mb-0 d-flex align-items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>
+      </svg>
+      <span>{{ anuncio.get_punto_entrega_display }}</span>
+    </p>
+  </div>
+</article>
+{% endwith %}
