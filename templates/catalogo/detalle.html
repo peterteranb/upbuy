@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ anuncio.titulo }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'catalogo:lista' %}" class="d-inline-block mb-3 text-decoration-none">← Volver al catálogo</a>
+
+<div class="row g-4">
+  {# Columna 1: fotos. En el celular ocupa todo el ancho; en escritorio, la mitad. #}
+  <div class="col-12 col-md-6">
+    {% with fotos=anuncio.fotos.all %}
+      {% if fotos %}
+        <div id="carruselFotos" class="carousel slide rounded overflow-hidden bg-body-secondary">
+          <div class="carousel-inner">
+            {% for foto in fotos %}
+              <div class="carousel-item{% if forloop.first %} active{% endif %}">
+                <img src="{{ foto.imagen.url }}" class="d-block w-100"
+                     alt="{{ anuncio.titulo }} · foto {{ forloop.counter }}"
+                     style="aspect-ratio: 4 / 3; object-fit: contain;">
+              </div>
+            {% endfor %}
+          </div>
+          {% if fotos|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#carruselFotos" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Anterior</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carruselFotos" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Siguiente</span>
+            </button>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="rounded bg-secondary-subtle text-body-secondary d-flex align-items-center justify-content-center"
+             style="aspect-ratio: 4 / 3;">Sin foto</div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {# Columna 2: datos del anuncio y del vendedor. #}
+  <div class="col-12 col-md-6">
+    <h1 class="h3 mb-2">{{ anuncio.titulo }}</h1>
+    <p class="display-6 fw-bold mb-3">Bs {{ anuncio.precio|floatformat:2 }}</p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge text-bg-primary">{{ anuncio.categoria.nombre }}</span>
+      <span class="badge text-bg-secondary">{{ anuncio.get_estado_producto_display }}</span>
+    </div>
+
+    <dl class="mb-3">
+      <dt>Punto de entrega</dt>
+      <dd>{{ anuncio.get_punto_entrega_display }}</dd>
+      {% if anuncio.horario_entrega %}
+        <dt>Horario de entrega</dt>
+        <dd>{{ anuncio.horario_entrega }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if anuncio.descripcion %}
+      <h2 class="h6">Descripción</h2>
+      <div class="mb-3">{{ anuncio.descripcion|linebreaks }}</div>
+    {% endif %}
+
+    <p class="small text-body-secondary">Publicado el {{ anuncio.creado_en|date:'d/m/Y' }}</p>
+
+    {# Sin correo: el contacto se hará por la plataforma, no se expone el email. #}
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 card-title">Vendedor</h2>
+        <p class="mb-0 fw-semibold">{{ anuncio.vendedor.get_full_name }}</p>
+        {% if anuncio.vendedor.carrera %}
+          <p class="mb-0 small text-body-secondary">{{ anuncio.vendedor.carrera }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
