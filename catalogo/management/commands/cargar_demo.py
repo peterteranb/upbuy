@@ -50,9 +50,10 @@ ANUNCIOS = [
      "Lunes a viernes, 15:00 a 17:00", "Con nueces y chispas de chocolate.", 1),
     ("demo3@upb.edu", "Libros", "Física Universitaria Sears-Zemansky Vol. 1", "180", E.USADO, P.A_CONVENIR,
      "", "Edición 14. Buen estado general, tapa un poco gastada.", 2),
-    ("demo1@upb.edu", "Servicios", "Clases particulares de Cálculo I (por hora)", "40", E.NUEVO, P.BIBLIOTECA,
-     "Sábados, 9:00 a 13:00",
-     "Estudiante de 7.º semestre. Preparación para parciales, ejercicios resueltos.", 1),
+    # Regla del negocio: no se permite vender tareas, trabajos ni tutorías.
+    ("demo1@upb.edu", "Servicios", "Impresión y anillado de documentos", "15", E.NUEVO, P.BIBLIOTECA,
+     "Lunes a viernes, 9:00 a 18:00",
+     "Impresión a color y blanco y negro, anillado y empastado. Precio por anillado.", 1),
     ("demo2@upb.edu", "Tecnología", "Mouse inalámbrico Logitech M170", "75", E.USADO, P.ENTRADA,
      "", "Incluye el receptor USB. Pilas nuevas.", 2),
     ("demo3@upb.edu", "Entradas", "Entrada para la Noche de Talentos UPB", "50", E.NUEVO, P.CAMPUS,
