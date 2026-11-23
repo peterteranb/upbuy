@@ -30,9 +30,10 @@ def lista(request):
 
 # ---- detalle: Uriel (UP-25). Raúl no edita debajo de esta línea ----
 def detalle(request, pk):
-    # PROVISIONAL (UP-46): Uriel la reemplaza en UP-25.
-    return render(request, "pendiente.html", {
-        "titulo": f"Detalle del anuncio #{pk}",
-        "responsable": "Uriel",
-        "jira": "UP-25",
-    })
+    """Detalle de un anuncio activo; cualquier otro estado responde 404."""
+    anuncio = get_object_or_404(
+        Anuncio.objects.select_related("categoria", "vendedor").prefetch_related("fotos"),
+        pk=pk,
+        estado=Anuncio.Estado.ACTIVO,
+    )
+    return render(request, "catalogo/detalle.html", {"anuncio": anuncio})
