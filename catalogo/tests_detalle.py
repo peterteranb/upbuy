@@ -69,7 +69,7 @@ class CatalogoDetalleTests(TestCase):
         respuesta = self.client.get(self.url(self.anuncio.pk))
         self.assertEqual(respuesta.status_code, 200)
         self.assertTemplateUsed(respuesta, "catalogo/detalle.html")
-        self.assertContains(respuesta, "<title>Cálculo de Stewart</title>", html=False)
+        self.assertContains(respuesta, "<title>Cálculo de Stewart · UPBuy</title>", html=False)
         self.assertContains(respuesta, "Cálculo de Stewart")
         self.assertContains(respuesta, "Bs 25,00")
         self.assertContains(respuesta, "Test Libros")
@@ -84,6 +84,15 @@ class CatalogoDetalleTests(TestCase):
     def test_no_muestra_el_correo_del_vendedor(self):
         respuesta = self.client.get(self.url(self.anuncio.pk))
         self.assertNotContains(respuesta, "maria@upb.edu")
+
+    def test_vendedor_sin_nombre_muestra_usuario_upb(self):
+        sin_nombre = get_user_model().objects.create_user(
+            email="anonimo@upb.edu", password="clave-segura-123"
+        )
+        Anuncio.objects.filter(pk=self.anuncio.pk).update(vendedor=sin_nombre)
+        respuesta = self.client.get(self.url(self.anuncio.pk))
+        self.assertContains(respuesta, "Usuario UPB")
+        self.assertNotContains(respuesta, "anonimo@upb.edu")
 
     def test_fotos_en_orden(self):
         # Se crean al revés para comprobar que manda el campo `orden`, no el id.

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ anuncio.titulo }}{% endblock %}
+{% block title %}{{ anuncio.titulo }} · UPBuy{% endblock %}
 
 {% block content %}
 <a href="{% url 'catalogo:lista' %}" class="d-inline-block mb-3 text-decoration-none">← Volver al catálogo</a>
@@ -68,7 +68,7 @@
     <div class="card">
       <div class="card-body">
         <h2 class="h6 card-title">Vendedor</h2>
-        <p class="mb-0 fw-semibold">{{ anuncio.vendedor.get_full_name }}</p>
+        <p class="mb-0 fw-semibold">{{ anuncio.vendedor.get_full_name|default:"Usuario UPB" }}</p>
         {% if anuncio.vendedor.carrera %}
           <p class="mb-0 small text-body-secondary">{{ anuncio.vendedor.carrera }}</p>
         {% endif %}
