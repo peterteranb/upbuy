@@ -1,0 +1,11 @@
+{# Tarjeta del vendedor. Recibe `vendedor`. Dueño: Santiago (UP-17 agrega la foto). #}
+{# Sin correo: el contacto se hará por la plataforma, no se expone el email. #}
+<div class="card">
+  <div class="card-body">
+    <h2 class="h6 card-title">Vendedor</h2>
+    <p class="mb-0 fw-semibold">{{ vendedor.get_full_name|default:"Usuario UPB" }}</p>
+    {% if vendedor.carrera %}
+      <p class="mb-0 small text-body-secondary">{{ vendedor.carrera }}</p>
+    {% endif %}
+  </div>
+</div>

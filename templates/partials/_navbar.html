@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-md navbar-dark upb-navbar">
+<nav class="navbar navbar-expand-lg navbar-dark upb-navbar">
   <div class="container">
     <a class="navbar-brand fw-bold" href="{% url 'catalogo:lista' %}">UPBuy</a>
 
@@ -8,9 +8,14 @@
     </button>
 
     <div class="collapse navbar-collapse" id="menu-principal">
-      <div class="navbar-nav ms-auto align-items-md-center gap-2 py-2 py-md-0">
+      <div class="navbar-nav ms-auto align-items-lg-center gap-2 py-2 py-lg-0">
         {% if user.is_authenticated %}
           <a class="btn btn-light btn-sm fw-semibold" href="{% url 'anuncios:publicar' %}">Publicar</a>
+          <a class="nav-link" href="{% url 'anuncios:mis_anuncios' %}">Mis anuncios</a>
+          <a class="nav-link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
+          {% if user.is_staff %}
+            <a class="nav-link" href="{% url 'moderacion:cola' %}">Moderación</a>
+          {% endif %}
           <span class="navbar-text text-truncate upb-usuario">{{ user.first_name|default:user.email }}</span>
           <form method="post" action="{% url 'usuarios:logout' %}" class="m-0">
             {% csrf_token %}

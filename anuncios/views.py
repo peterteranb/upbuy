@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import AnuncioForm
 from .models import Anuncio, FotoAnuncio
@@ -19,13 +20,35 @@ def publicar(request):
             with transaction.atomic():
                 anuncio = form.save(commit=False)
                 anuncio.vendedor = request.user
-                anuncio.estado = Anuncio.Estado.ACTIVO
+                anuncio.estado = Anuncio.Estado.EN_REVISION
                 anuncio.save()
                 for orden, foto in enumerate(form.cleaned_data["fotos"]):
                     FotoAnuncio.objects.create(anuncio=anuncio, imagen=foto, orden=orden)
-            messages.success(request, "Tu anuncio fue publicado.")
-            return redirect("catalogo:detalle", pk=anuncio.pk)
+            messages.success(request, "Tu anuncio fue enviado a revisión.")
+            return redirect("anuncios:mis_anuncios")
     else:
         form = AnuncioForm()
 
     return render(request, "anuncios/publicar.html", {"form": form})
+
+
+# ---- Provisionales (UP-48). Gonzalo las reemplaza en UP-30 y UP-20 ----
+@login_required
+def mis_anuncios(request):
+    return render(request, "pendiente.html", {
+        "titulo": "Mis anuncios", "responsable": "Gonzalo", "jira": "UP-30",
+    })
+
+
+@login_required
+def editar(request, pk):
+    return render(request, "pendiente.html", {
+        "titulo": f"Editar el anuncio #{pk}", "responsable": "Gonzalo", "jira": "UP-20",
+    })
+
+
+@login_required
+@require_POST
+def eliminar(request, pk):
+    messages.info(request, "Eliminar anuncios todavía está en construcción (UP-20).")
+    return redirect("anuncios:mis_anuncios")

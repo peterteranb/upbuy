@@ -1,4 +1,5 @@
-"""Carga datos de demostración: 3 usuarios verificados y 12 anuncios activos con fotos.
+"""Carga datos de demostración: 3 usuarios verificados, 12 anuncios activos y 3 en revisión, con fotos,
+más un moderador (moderador@upb.edu, is_staff).
 
 Uso:
     python manage.py cargar_demo           # crea lo que falte (se puede correr varias veces)
@@ -66,6 +67,18 @@ ANUNCIOS = [
      "Lunes a miércoles, 12:30 a 13:30", "Escuadras de 30 cm, compás metálico y transportador.", 2),
 ]
 
+# Sprint 2: anuncios que esperan moderación, para la demo de UP-29 (mismo formato que ANUNCIOS).
+ANUNCIOS_EN_REVISION = [
+    ("demo1@upb.edu", "Tecnología", "Audífonos Bluetooth JBL Tune 510", "220", E.COMO_NUEVO, P.ENTRADA,
+     "", "Batería de 40 horas. Incluyen el cable de carga.", 1),
+    ("demo2@upb.edu", "Comida", "Empanadas de queso (media docena)", "36", E.NUEVO, P.CAMPUS,
+     "Miércoles, 10:00 a 11:00", "Horneadas el mismo día. Pedido hasta el martes.", 1),
+    ("demo3@upb.edu", "Libros", "Química General – Chang, 12.ª ed.", "160", E.USADO, P.BIBLIOTECA,
+     "", "Con algunas páginas subrayadas. Sin hojas sueltas.", 1),
+]
+
+MODERADOR = {"email": "moderador@upb.edu", "first_name": "Moderador", "last_name": "UPBuy"}
+
 COLORES = [
     (31, 78, 140), (196, 69, 54), (46, 125, 50), (123, 31, 162),
     (230, 126, 34), (0, 121, 107), (84, 110, 122), (173, 20, 87),
@@ -112,7 +125,7 @@ class Command(BaseCommand):
             self.cargar()
 
     def borrar(self):
-        correos = [u["email"] for u in USUARIOS]
+        correos = [u["email"] for u in USUARIOS] + [MODERADOR["email"]]
         fotos = FotoAnuncio.objects.filter(anuncio__vendedor__email__in=correos)
         n_fotos = 0
         for foto in fotos:
@@ -127,7 +140,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def cargar(self):
         categorias = {c.nombre: c for c in Categoria.objects.all()}
-        faltan = {a[1] for a in ANUNCIOS} - categorias.keys()
+        faltan = {a[1] for a in ANUNCIOS + ANUNCIOS_EN_REVISION} - categorias.keys()
         if faltan:
             raise CommandError(f"Faltan categorías (¿corriste migrate?): {', '.join(sorted(faltan))}")
 
@@ -142,9 +155,20 @@ class Command(BaseCommand):
                 usuario.save(update_fields=["password"])
             usuarios[datos["email"]] = usuario
 
+        moderador, _ = Usuario.objects.update_or_create(
+            email=MODERADOR["email"],
+            defaults={**MODERADOR, "email_verificado": True, "is_active": True, "is_staff": True},
+        )
+        if not moderador.check_password(CLAVE_DEMO):
+            moderador.set_password(CLAVE_DEMO)
+            moderador.save(update_fields=["password"])
+
+        lista = [(a, Anuncio.Estado.ACTIVO) for a in ANUNCIOS]
+        lista += [(a, Anuncio.Estado.EN_REVISION) for a in ANUNCIOS_EN_REVISION]
+
         creados = 0
         ahora = timezone.now()
-        for i, (correo, cat, titulo, precio, estado_p, punto, horario, desc, n_fotos) in enumerate(ANUNCIOS):
+        for i, ((correo, cat, titulo, precio, estado_p, punto, horario, desc, n_fotos), estado) in enumerate(lista):
             anuncio, creado = Anuncio.objects.get_or_create(
                 vendedor=usuarios[correo],
                 titulo=titulo,
@@ -155,7 +179,7 @@ class Command(BaseCommand):
                     "estado_producto": estado_p,
                     "punto_entrega": punto,
                     "horario_entrega": horario,
-                    "estado": Anuncio.Estado.ACTIVO,
+                    "estado": estado,
                 },
             )
             if creado:
@@ -171,6 +195,6 @@ class Command(BaseCommand):
                     foto.save()
 
         self.stdout.write(self.style.SUCCESS(
-            f"Demo lista: {len(usuarios)} usuarios (clave {CLAVE_DEMO}), "
-            f"{creados} anuncios nuevos, {len(ANUNCIOS) - creados} ya existían."
+            f"Demo lista: {len(usuarios)} usuarios y el moderador {MODERADOR['email']} (clave {CLAVE_DEMO}), "
+            f"{creados} anuncios nuevos, {len(lista) - creados} ya existían."
         ))

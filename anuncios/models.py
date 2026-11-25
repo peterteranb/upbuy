@@ -87,8 +87,20 @@ class Anuncio(models.Model):
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,
-        default=Estado.ACTIVO  # Sprint 2: EN_REVISION
+        default=Estado.EN_REVISION
     )
+
+    motivo_rechazo = models.TextField("motivo de rechazo", blank=True)
+
+    revisado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="anuncios_revisados"
+    )
+
+    revisado_en = models.DateTimeField("revisado en", null=True, blank=True)
 
     creado_en = models.DateTimeField(auto_now_add=True)
 

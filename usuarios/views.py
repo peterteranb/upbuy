@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import redirect, render
@@ -59,3 +60,11 @@ def verificar(request, uidb64, token):
         return redirect("usuarios:login")
 
     return render(request, "usuarios/verificacion_invalida.html", status=400)
+
+
+# ---- Provisional (UP-48). Santiago la reemplaza en UP-17 ----
+@login_required
+def perfil(request):
+    return render(request, "pendiente.html", {
+        "titulo": "Mi perfil", "responsable": "Santiago", "jira": "UP-17",
+    })

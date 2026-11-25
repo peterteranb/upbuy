@@ -64,9 +64,9 @@ class AnuncioTests(AnuncioBaseTestCase):
             with transaction.atomic():
                 self.crear_anuncio(precio=Decimal("0"))
 
-    def test_estado_por_defecto_es_activo(self):
+    def test_estado_por_defecto_es_en_revision(self):
         anuncio = self.crear_anuncio()
-        self.assertEqual(anuncio.estado, Anuncio.Estado.ACTIVO)
+        self.assertEqual(anuncio.estado, Anuncio.Estado.EN_REVISION)
 
 
 class FotoAnuncioTests(AnuncioBaseTestCase):
@@ -168,7 +168,7 @@ class PublicarAnuncioViewTests(TestCase):
 
         self.assertEqual(Anuncio.objects.count(), 1)
         anuncio = Anuncio.objects.get()
-        self.assertEqual(anuncio.estado, Anuncio.Estado.ACTIVO)
+        self.assertEqual(anuncio.estado, Anuncio.Estado.EN_REVISION)
         self.assertEqual(anuncio.vendedor, self.verificado)
         self.assertEqual(anuncio.precio, Decimal("50.00"))
         fotos = list(anuncio.fotos.all())
@@ -177,4 +177,6 @@ class PublicarAnuncioViewTests(TestCase):
             [f.imagen.name.rsplit("/", 1)[-1][:5] for f in fotos],
             ["foto0", "foto1", "foto2"],
         )
-        self.assertRedirects(respuesta, f"/anuncio/{anuncio.pk}/", fetch_redirect_response=False)
+        self.assertRedirects(respuesta, reverse("anuncios:mis_anuncios"), fetch_redirect_response=False)
+        mensajes = [str(m) for m in respuesta.wsgi_request._messages]
+        self.assertIn("Tu anuncio fue enviado a revisión.", mensajes)
