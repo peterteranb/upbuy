@@ -21,4 +21,5 @@ urlpatterns = [
     ),
     # Django 5 solo acepta POST en LogoutView.
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("perfil/", views.perfil, name="perfil"),
 ]

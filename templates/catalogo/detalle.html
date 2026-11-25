@@ -64,16 +64,8 @@
 
     <p class="small text-body-secondary">Publicado el {{ anuncio.creado_en|date:'d/m/Y' }}</p>
 
-    {# Sin correo: el contacto se hará por la plataforma, no se expone el email. #}
-    <div class="card">
-      <div class="card-body">
-        <h2 class="h6 card-title">Vendedor</h2>
-        <p class="mb-0 fw-semibold">{{ anuncio.vendedor.get_full_name|default:"Usuario UPB" }}</p>
-        {% if anuncio.vendedor.carrera %}
-          <p class="mb-0 small text-body-secondary">{{ anuncio.vendedor.carrera }}</p>
-        {% endif %}
-      </div>
-    </div>
+    {% include "usuarios/_tarjeta_vendedor.html" with vendedor=anuncio.vendedor %}
+    {% include "denuncias/_boton_denunciar.html" with anuncio=anuncio %}
   </div>
 </div>
 {% endblock %}

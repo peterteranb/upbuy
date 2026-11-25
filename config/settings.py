@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'usuarios',
     'anuncios',
     'catalogo',
+    'moderacion',
+    'denuncias',
 ]
 
 MIDDLEWARE = [
