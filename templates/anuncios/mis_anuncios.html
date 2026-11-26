@@ -1,0 +1,190 @@
+
+{% extends "base.html" %}
+
+{% block title %}Mis anuncios | UPBuy{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between
+            align-items-center gap-3 mb-4">
+
+    <div>
+        <h1 class="fw-bold">Mis anuncios</h1>
+        <p class="text-muted mb-0">
+            Consulta el estado de tus publicaciones.
+        </p>
+    </div>
+
+    <a href="{% url 'anuncios:publicar' %}"
+       class="btn btn-primary">
+        + Publicar anuncio
+    </a>
+
+</div>
+
+{% for anuncio in anuncios %}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+
+        <div class="row g-3 align-items-center">
+
+            <!-- Fotografía principal -->
+            <div class="col-12 col-sm-3 col-lg-2">
+
+                {% with foto=anuncio.fotos.all.0 %}
+
+                    {% if foto %}
+                        <img src="{{ foto.imagen.url }}"
+                             alt="{{ anuncio.titulo }}"
+                             class="img-fluid rounded w-100"
+                             style="height: 140px;
+                                    object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded d-flex
+                                    align-items-center
+                                    justify-content-center
+                                    text-muted"
+                             style="height: 140px;">
+                            Sin fotografía
+                        </div>
+                    {% endif %}
+
+                {% endwith %}
+
+            </div>
+
+            <!-- Información del anuncio -->
+            <div class="col">
+
+                <h5 class="fw-bold mb-1">
+                    {{ anuncio.titulo }}
+                </h5>
+
+                <p class="text-muted mb-1">
+                    {{ anuncio.categoria.nombre }}
+                </p>
+
+                <p class="fw-semibold fs-5 mb-2">
+                    Bs {{ anuncio.precio|floatformat:2 }}
+                </p>
+
+                <!-- Estado de moderación -->
+
+                {% if anuncio.estado == "revision" %}
+
+                    <span class="badge text-bg-warning">
+                        {{ anuncio.get_estado_display }}
+                    </span>
+
+                {% elif anuncio.estado == "activo" %}
+
+                    <span class="badge text-bg-success">
+                        {{ anuncio.get_estado_display }}
+                    </span>
+
+                {% elif anuncio.estado == "rechazado" %}
+
+                    <span class="badge text-bg-danger">
+                        {{ anuncio.get_estado_display }}
+                    </span>
+
+                {% elif anuncio.estado == "vendido" %}
+
+                    <span class="badge text-bg-secondary">
+                        {{ anuncio.get_estado_display }}
+                    </span>
+
+                {% endif %}
+
+                <p class="small text-muted mt-2 mb-0">
+                    Publicado:
+                    {{ anuncio.creado_en|date:"d/m/Y H:i" }}
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- Motivo de rechazo -->
+
+        {% if anuncio.estado == "rechazado" %}
+
+            <div class="alert alert-danger mt-3 mb-0">
+
+                <strong>Motivo de rechazo:</strong>
+
+                <p class="mb-0">
+                    {{ anuncio.motivo_rechazo|default:"No se especificó un motivo." }}
+                </p>
+
+            </div>
+
+        {% endif %}
+
+        <!-- Acciones -->
+
+        <div class="d-flex flex-wrap
+                    justify-content-end gap-2 mt-3">
+
+            {% if anuncio.estado == "activo" %}
+
+                <a href="{% url 'catalogo:detalle' anuncio.pk %}"
+                   class="btn btn-outline-primary btn-sm">
+                    Ver anuncio
+                </a>
+
+            {% endif %}
+
+            {% if anuncio.estado != "vendido" %}
+
+                <a href="{% url 'anuncios:editar' anuncio.pk %}"
+                   class="btn btn-outline-secondary btn-sm">
+                    Editar
+                </a>
+
+            {% endif %}
+
+            <form method="post"
+                  action="{% url 'anuncios:eliminar' anuncio.pk %}"
+                  onsubmit="return confirm('¿Seguro que deseas eliminar este anuncio?');">
+
+                {% csrf_token %}
+
+                <button type="submit"
+                        class="btn btn-outline-danger btn-sm">
+                    Eliminar
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% empty %}
+
+<div class="card shadow-sm text-center py-5">
+
+    <div class="card-body">
+
+        <h4>Todavía no tienes anuncios</h4>
+
+        <p class="text-muted">
+            Publica tu primer producto y comienza
+            a vender en UPBuy.
+        </p>
+
+        <a href="{% url 'anuncios:publicar' %}"
+           class="btn btn-primary">
+            Publicar mi primer anuncio
+        </a>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+{% endblock %}
