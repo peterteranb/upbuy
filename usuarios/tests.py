@@ -179,3 +179,148 @@ class LoginLogoutTests(TestCase):
         self.client.force_login(self.usuario)
         respuesta = self.client.get(reverse("usuarios:logout"))
         self.assertEqual(respuesta.status_code, 405)
+
+
+
+
+# ---- UP-17 Perfil ----
+import os
+import shutil
+import tempfile
+from decimal import Decimal
+from io import BytesIO
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from PIL import Image
+
+from anuncios.models import Anuncio, Categoria
+
+MEDIA_DE_PRUEBA = tempfile.mkdtemp()
+
+
+def imagen_png(nombre="foto.png"):
+    """Crea una imagen PNG pequeña en memoria para subirla en los tests."""
+    buffer = BytesIO()
+    Image.new("RGB", (10, 10), "blue").save(buffer, format="PNG")
+    return SimpleUploadedFile(nombre, buffer.getvalue(), content_type="image/png")
+
+
+def imagen_pesada():
+    """PNG de ruido de 1000x1000: no se puede comprimir y pesa unos 3 MB."""
+    buffer = BytesIO()
+    Image.frombytes("RGB", (1000, 1000), os.urandom(1000 * 1000 * 3)).save(buffer, format="PNG")
+    return SimpleUploadedFile("pesada.png", buffer.getvalue(), content_type="image/png")
+
+
+@override_settings(MEDIA_ROOT=MEDIA_DE_PRUEBA)
+class PerfilTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA_DE_PRUEBA, ignore_errors=True)
+
+    def setUp(self):
+        self.usuario = Usuario.objects.create_user(
+            email="ana@upb.edu", password="clave-segura-123", first_name="Ana", last_name="Pérez"
+        )
+        self.client.force_login(self.usuario)
+        self.url = reverse("usuarios:perfil")
+
+    def datos(self, **cambios):
+        datos = {"first_name": "Ana", "last_name": "Pérez", "carrera": "Derecho"}
+        datos.update(cambios)
+        return datos
+
+    def test_anonimo_va_al_login(self):
+        self.client.logout()
+        respuesta = self.client.get(self.url)
+        self.assertRedirects(respuesta, f"{reverse('usuarios:login')}?next={self.url}")
+
+    def test_muestra_el_correo_sin_poder_editarlo(self):
+        respuesta = self.client.get(self.url)
+        self.assertContains(respuesta, "ana@upb.edu")
+        self.assertNotIn("email", respuesta.context["form"].fields)
+
+    def test_editar_nombre_y_carrera(self):
+        respuesta = self.client.post(self.url, self.datos(first_name="Ana María", carrera="Economía"))
+        self.assertRedirects(respuesta, self.url)
+        self.usuario.refresh_from_db()
+        self.assertEqual(self.usuario.first_name, "Ana María")
+        self.assertEqual(self.usuario.carrera, "Economía")
+
+    def test_carrera_fuera_de_la_lista_se_rechaza(self):
+        respuesta = self.client.post(self.url, self.datos(carrera="Carrera inventada"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].has_error("carrera"))
+
+    def test_subir_foto(self):
+        respuesta = self.client.post(self.url, {**self.datos(), "foto": imagen_png()})
+        self.assertRedirects(respuesta, self.url)
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.foto.name.startswith("perfiles/"))
+
+    def test_subir_otra_foto_borra_la_anterior(self):
+        self.client.post(self.url, {**self.datos(), "foto": imagen_png("primera.png")})
+        self.usuario.refresh_from_db()
+        anterior = self.usuario.foto.name
+
+        self.client.post(self.url, {**self.datos(), "foto": imagen_png("segunda.png")})
+        self.usuario.refresh_from_db()
+        self.assertNotEqual(self.usuario.foto.name, anterior)
+        self.assertFalse(self.usuario.foto.storage.exists(anterior))
+
+    def test_archivo_que_no_es_imagen_se_rechaza(self):
+        texto = SimpleUploadedFile("notas.txt", b"esto no es una imagen", content_type="text/plain")
+        respuesta = self.client.post(self.url, {**self.datos(), "foto": texto})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["form"].has_error("foto"))
+        self.usuario.refresh_from_db()
+        self.assertFalse(self.usuario.foto)
+
+    def test_foto_de_mas_de_2_mb_se_rechaza(self):
+        foto = imagen_pesada()
+        self.assertGreater(foto.size, 2 * 1024 * 1024)
+        respuesta = self.client.post(self.url, {**self.datos(), "foto": foto})
+        self.assertContains(respuesta, "La foto no puede pesar más de 2 MB.")
+        self.usuario.refresh_from_db()
+        self.assertFalse(self.usuario.foto)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_DE_PRUEBA)
+class TarjetaVendedorTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA_DE_PRUEBA, ignore_errors=True)
+
+    def setUp(self):
+        self.vendedor = Usuario.objects.create_user(
+            email="luis@upb.edu", password="clave-segura-123",
+            first_name="Luis", last_name="Rojas", carrera="Derecho",
+        )
+        categoria, _ = Categoria.objects.get_or_create(slug="test-perfil", defaults={"nombre": "Test Perfil"})
+        self.anuncio = Anuncio.objects.create(
+            vendedor=self.vendedor,
+            categoria=categoria,
+            titulo="Libro de cálculo",
+            estado_producto=Anuncio.EstadoProducto.USADO,
+            precio=Decimal("50.00"),
+            punto_entrega=Anuncio.PuntoEntrega.BIBLIOTECA,
+            estado=Anuncio.Estado.ACTIVO,
+        )
+        self.url = reverse("catalogo:detalle", args=[self.anuncio.pk])
+
+    def test_tarjeta_sin_foto_muestra_la_inicial(self):
+        respuesta = self.client.get(self.url)
+        self.assertContains(respuesta, "Luis Rojas")
+        self.assertContains(respuesta, "Derecho")
+        self.assertContains(respuesta, '<span class="rounded-circle')
+        self.assertContains(respuesta, ">L</span>")
+
+    def test_tarjeta_con_foto_muestra_la_foto(self):
+        self.vendedor.foto = imagen_png()
+        self.vendedor.save()
+        respuesta = self.client.get(self.url)
+        self.assertContains(respuesta, self.vendedor.foto.url)
+        self.assertNotContains(respuesta, ">L</span>")

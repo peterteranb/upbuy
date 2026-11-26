@@ -100,3 +100,68 @@ class LoginForm(BootstrapMixin, AuthenticationForm):
 
     def clean_username(self):
         return self.cleaned_data["username"].strip().lower()
+
+
+# Carreras de la UPB para el perfil. El campo del modelo sigue siendo texto libre.
+CARRERAS = [
+    "Administración de Empresas",
+    "Arquitectura",
+    "Comunicación Estratégica y Digital",
+    "Derecho",
+    "Diseño Gráfico y Producción Crossmedia",
+    "Economía",
+    "Ingeniería Civil",
+    "Ingeniería Comercial",
+    "Ingeniería de Sistemas Computacionales",
+    "Ingeniería Electromecánica",
+    "Ingeniería en Energía",
+    "Ingeniería Financiera",
+    "Ingeniería Industrial y de Sistemas",
+    "Ingeniería Mecatrónica",
+    "Medicina",
+    "Odontología",
+    "Otra",
+]
+
+TAMANO_MAXIMO_FOTO = 2 * 1024 * 1024  # 2 MB
+
+
+class PerfilForm(BootstrapMixin, forms.ModelForm):
+    carrera = forms.ChoiceField(label="Carrera", required=False)
+
+    class Meta:
+        model = Usuario
+        fields = ["first_name", "last_name", "carrera", "foto"]
+        labels = {"first_name": "Nombre", "last_name": "Apellido", "foto": "Foto de perfil"}
+        widgets = {"foto": forms.FileInput(attrs={"accept": "image/*"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._aplicar_bootstrap()
+        self.fields["first_name"].required = True
+        self.fields["last_name"].required = True
+
+        # Lista desplegable. Si el usuario escribió otra carrera al registrarse, se conserva.
+        opciones = [("", "Elige tu carrera")] + [(c, c) for c in CARRERAS]
+        actual = self.instance.carrera
+        if actual and actual not in CARRERAS:
+            opciones.append((actual, actual))
+        self.fields["carrera"].choices = opciones
+        self.fields["carrera"].widget.attrs["class"] = "form-select"
+
+        # Se recuerda la foto anterior para borrarla si sube otra.
+        self._foto_anterior = self.instance.foto.name if self.instance.foto else ""
+
+    def clean_foto(self):
+        foto = self.cleaned_data.get("foto")
+        # Solo se revisa el tamaño si subió un archivo nuevo.
+        # Que sea imagen ya lo valida el ImageField del modelo.
+        if "foto" in self.files and foto.size > TAMANO_MAXIMO_FOTO:
+            raise forms.ValidationError("La foto no puede pesar más de 2 MB.")
+        return foto
+
+    def save(self, commit=True):
+        usuario = super().save(commit=commit)
+        if commit and self._foto_anterior and usuario.foto.name != self._foto_anterior:
+            usuario.foto.storage.delete(self._foto_anterior)
+        return usuario

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Mi perfil · UPBuy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card shadow-sm w-100" style="max-width: 420px;">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        {% include "usuarios/_avatar.html" with usuario=user tamano=72 %}
+        <div class="text-truncate">
+          <h1 class="h4 mb-0 text-truncate">{{ user.get_full_name|default:"Mi perfil" }}</h1>
+          <p class="mb-0 small text-body-secondary text-truncate">{{ user.email }}</p>
+        </div>
+      </div>
+
+      {% include "usuarios/_errores_generales.html" %}
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="correo" class="form-label">Correo institucional</label>
+          <input type="email" id="correo" class="form-control" value="{{ user.email }}" disabled>
+          <div class="form-text">El correo no se puede cambiar.</div>
+        </div>
+        {% include "usuarios/_campo.html" with campo=form.first_name %}
+        {% include "usuarios/_campo.html" with campo=form.last_name %}
+        {% include "usuarios/_campo.html" with campo=form.carrera %}
+        {% include "usuarios/_campo.html" with campo=form.foto %}
+        <p class="form-text mt-n2 mb-3">JPG o PNG, de 2 MB como máximo. Si subes otra, reemplaza a la anterior.</p>
+        <button type="submit" class="btn btn-primary w-100">Guardar cambios</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

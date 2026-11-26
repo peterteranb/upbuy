@@ -27,6 +27,7 @@ class Usuario(AbstractUser):
     email = models.EmailField("correo", unique=True)
     email_verificado = models.BooleanField("correo verificado", default=False)
     carrera = models.CharField("carrera", max_length=80, blank=True)
+    foto = models.ImageField("foto", upload_to="perfiles/%Y/%m/", blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
