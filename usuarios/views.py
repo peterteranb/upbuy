@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
-from .forms import RegistroForm
+from .forms import PerfilForm, RegistroForm
 from .tokens import token_verificacion
 
 Usuario = get_user_model()
@@ -62,9 +62,14 @@ def verificar(request, uidb64, token):
     return render(request, "usuarios/verificacion_invalida.html", status=400)
 
 
-# ---- Provisional (UP-48). Santiago la reemplaza en UP-17 ----
 @login_required
 def perfil(request):
-    return render(request, "pendiente.html", {
-        "titulo": "Mi perfil", "responsable": "Santiago", "jira": "UP-17",
-    })
+    if request.method == "POST":
+        form = PerfilForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tu perfil fue actualizado.")
+            return redirect("usuarios:perfil")
+    else:
+        form = PerfilForm(instance=request.user)
+    return render(request, "usuarios/perfil.html", {"form": form})
