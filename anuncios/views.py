@@ -32,12 +32,25 @@ def publicar(request):
     return render(request, "anuncios/publicar.html", {"form": form})
 
 
-# ---- Provisionales (UP-48). Gonzalo las reemplaza en UP-30 y UP-20 ----
+
 @login_required
 def mis_anuncios(request):
-    return render(request, "pendiente.html", {
-        "titulo": "Mis anuncios", "responsable": "Gonzalo", "jira": "UP-30",
-    })
+    anuncios = (
+        Anuncio.objects
+        .filter(vendedor=request.user)
+        .select_related("categoria")
+        .prefetch_related("fotos")
+        .order_by("-creado_en")
+    )
+
+    return render(
+        request,
+        "anuncios/mis_anuncios.html",
+        {
+            "anuncios": anuncios,
+        }
+    )
+
 
 
 @login_required

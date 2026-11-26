@@ -180,3 +180,176 @@ class PublicarAnuncioViewTests(TestCase):
         self.assertRedirects(respuesta, reverse("anuncios:mis_anuncios"), fetch_redirect_response=False)
         mensajes = [str(m) for m in respuesta.wsgi_request._messages]
         self.assertIn("Tu anuncio fue enviado a revisión.", mensajes)
+
+class MisAnunciosTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        Usuario = get_user_model()
+
+        cls.vendedor = Usuario.objects.create_user(
+            email="vendedor@example.com",
+            password="PruebaTest2026!"
+        )
+
+        cls.otro_vendedor = Usuario.objects.create_user(
+            email="otro@example.com",
+            password="PruebaTest2026!"
+        )
+
+        cls.categoria, _ = Categoria.objects.get_or_create(
+            slug="tecnologia",
+            defaults={"nombre": "Tecnología"}
+        )
+
+    def setUp(self):
+        self.url = reverse("anuncios:mis_anuncios")
+
+    def crear_anuncio(
+        self,
+        titulo,
+        estado,
+        vendedor=None,
+        motivo=""
+    ):
+        return Anuncio.objects.create(
+            vendedor=vendedor or self.vendedor,
+            categoria=self.categoria,
+            titulo=titulo,
+            descripcion="Producto de prueba",
+            precio=150,
+            estado_producto=Anuncio.EstadoProducto.USADO,
+            punto_entrega=Anuncio.PuntoEntrega.CAMPUS,
+            estado=estado,
+            motivo_rechazo=motivo
+        )
+
+    def test_requiere_inicio_de_sesion(self):
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(
+            reverse("usuarios:login"),
+            respuesta.url
+        )
+
+    def test_muestra_solo_anuncios_del_propietario(self):
+        self.crear_anuncio(
+            "Mi calculadora",
+            Anuncio.Estado.EN_REVISION
+        )
+
+        self.crear_anuncio(
+            "Anuncio de otro vendedor",
+            Anuncio.Estado.RECHAZADO,
+            vendedor=self.otro_vendedor,
+            motivo="Motivo privado de otro vendedor"
+        )
+
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Mi calculadora")
+        self.assertNotContains(
+            respuesta,
+            "Anuncio de otro vendedor"
+        )
+        self.assertNotContains(
+            respuesta,
+            "Motivo privado de otro vendedor"
+        )
+
+    def test_muestra_los_cuatro_estados(self):
+        for estado in Anuncio.Estado:
+            self.crear_anuncio(
+                f"Producto {estado.value}",
+                estado
+            )
+
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(respuesta.status_code, 200)
+
+        for estado in Anuncio.Estado:
+            self.assertContains(
+                respuesta,
+                estado.label
+            )
+
+        self.assertEqual(
+            len(respuesta.context["anuncios"]),
+            4
+        )
+
+    def test_muestra_motivo_de_rechazo(self):
+        self.crear_anuncio(
+            "Monitor",
+            Anuncio.Estado.RECHAZADO,
+            motivo="La fotografía no es clara."
+        )
+
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(
+            respuesta,
+            "Motivo de rechazo:"
+        )
+
+        self.assertContains(
+            respuesta,
+            "La fotografía no es clara."
+        )
+
+    def test_no_muestra_motivo_en_anuncio_activo(self):
+        self.crear_anuncio(
+            "Teclado",
+            Anuncio.Estado.ACTIVO,
+            motivo="Motivo anterior de rechazo"
+        )
+
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertNotContains(
+            respuesta,
+            "Motivo anterior de rechazo"
+        )
+
+    def test_lista_vacia(self):
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(respuesta.status_code, 200)
+
+        self.assertContains(
+            respuesta,
+            "Todavía no tienes anuncios"
+        )
+
+    def test_orden_de_anuncios(self):
+        antiguo = self.crear_anuncio(
+            "Primer anuncio",
+            Anuncio.Estado.ACTIVO
+        )
+
+        reciente = self.crear_anuncio(
+            "Segundo anuncio",
+            Anuncio.Estado.EN_REVISION
+        )
+
+        self.client.force_login(self.vendedor)
+
+        respuesta = self.client.get(self.url)
+
+        self.assertEqual(
+            list(respuesta.context["anuncios"]),
+            [reciente, antiguo]
+        )
